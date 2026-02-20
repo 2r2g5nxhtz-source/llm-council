@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Намаз.ИИ — Интерактивный путеводитель</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Основные переменные и стили оформления */
+        :root {
+            --primary: #00897B;
+            --primary-light: #E0F2F1;
+            --accent: #FFCA28;
+            --bg: #F0F7F7;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: #1A3A3A;
+            scroll-behavior: smooth;
+        }
+
+        /* Эффект матового стекла (Glassmorphism) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 24px;
+        }
+
+        /* Контейнеры для графиков */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+            margin: 0 auto;
+        }
+
+        /* Окно чата */
+        .ai-chat-window {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 24px;
+            width: 380px;
+            max-width: calc(100vw - 48px);
+            height: 550px;
+            z-index: 1000;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .ai-chat-window.active {
+            display: flex;
+        }
+
+        /* Анимация загрузки */
+        .loading-dots:after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+
+            0%,
+            20% {
+                content: '.';
+            }
+
+            40% {
+                content: '..';
+            }
+
+            60% {
+                content: '...';
+            }
+
+            80%,
+            100% {
+                content: '';
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #B2DFDB;
+            border-radius: 10px;
+        }
+
+        .message-ai {
+            background-color: #F1F5F9;
+            color: #1E293B;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-user {
+            background-color: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body class="antialiased selection:bg-teal-100 selection:text-teal-900">
+
+    <!-- Навигация -->
+    <nav class="fixed top-0 w-full z-50 glass-panel !rounded-none border-b border-teal-100 shadow-sm px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🕌</span>
+                <h1 class="font-extrabold text-xl tracking-tighter text-teal-800 uppercase">Намаз.ИИ</h1>
+            </div>
+            <div class="hidden md:flex gap-8 font-semibold text-sm text-teal-700">
+                <a href="#home" class="hover:text-teal-500 transition-colors">Главная</a>
+                <a href="#wudu" class="hover:text-teal-500 transition-colors">Омовение</a>
+                <a href="#salah" class="hover:text-teal-500 transition-colors">Структура</a>
+                <a href="#stats" class="hover:text-teal-500 transition-colors">Аналитика</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto space-y-20">
+
+        <!-- Главный экран -->
+        <section id="home" class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center pt-8">
+            <div class="space-y-10">
+                <div
+                    class="inline-flex items-center gap-2 px-4 py-1.5 bg-teal-100 text-teal-800 rounded-full text-xs font-bold uppercase tracking-wider">
+                    <span class="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></span> Духовный рост
+                </div>
+                <h2 class="text-5xl md:text-7xl font-black text-teal-950 leading-[1.1] tracking-tight">
+                    Научитесь <br /><span class="text-teal-600">молиться</span> <br />правильно
+                </h2>
+                <p class="text-lg text-slate-600 leading-relaxed max-w-lg">
+                    Ваш персональный помощник в мире исламской практики. Изучайте основы намаза с помощью визуализаций и
+                    умного наставника.
+                </p>
+
+                <!-- Блок Напутствия Дня -->
+                <div class="p-8 bg-teal-900 rounded-[32px] text-white shadow-2xl relative overflow-hidden group">
+                    <div
+                        class="absolute -right-10 -top-10 w-48 h-48 bg-teal-800 rounded-full opacity-30 transition-transform group-hover:scale-125">
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                            <span>✨</span> Напутствие от ИИ
+                        </h3>
+                        <p id="inspiration-text" class="text-teal-50/80 leading-relaxed mb-8 italic min-h-[3rem]">
+                            Нажмите кнопку ниже, чтобы получить духовный совет на сегодня.
+                        </p>
+                        <div id="ai-error-status"
+                            class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4 text-[11px] text-red-200">
+                        </div>
+                        <button onclick="fetchInspiration()" id="inspire-btn"
+                            class="bg-amber-400 hover:bg-amber-500 text-teal-950 font-bold py-4 px-10 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center gap-3">
+                            <span id="inspire-label">Получить совет</span>
+                            <div id="inspire-loader"
+                                class="hidden w-5 h-5 border-4 border-teal-950 border-t-transparent rounded-full animate-spin">
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-8 shadow-xl border-teal-50">
+                <h3 class="text-lg font-bold text-teal-900 mb-6 flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-amber-400 rounded-full"></span>
+                    Польза молитвы
+                </h3>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Раздел Омовение -->
+        <section id="wudu" class="space-y-10">
+            <div class="text-center space-y-4">
+                <h2 class="text-4xl font-black text-teal-950">Ритуальное омовение (Вуду)</h2>
+                <p class="text-slate-600 max-w-2xl mx-auto italic">Чистота — это ключ к молитве. Выполните эти четыре
+                    шага перед началом.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Карточка 1 -->
+                <div onclick="openWuduModal(1)"
+                    class="glass-panel p-8 hover:scale-105 transition-all duration-300 group cursor-pointer border-teal-50 shadow-md hover:shadow-xl">
+                    <div class="text-3xl font-black text-teal-600/20 mb-4 font-serif">I</div>
+                    <div class="text-5xl mb-5">🤲</div>
+                    <h4 class="text-xl font-bold text-teal-950 mb-3">Намерение</h4>
+                    <p class="text-sm text-slate-500 leading-relaxed font-medium">Выразите ният и вымойте кисти рук.</p>
+                </div>
+                <!-- Карточка 2 -->
+                <div onclick="openWuduModal(2)"
+                    class="glass-panel p-8 hover:scale-105 transition-all duration-300 group cursor-pointer border-teal-50 shadow-md hover:shadow-xl">
+                    <div class="text-3xl font-black text-teal-600/20 mb-4 font-serif">II</div>
+                    <div class="text-5xl mb-5">💧</div>
+                    <h4 class="text-xl font-bold text-teal-950 mb-3">Лицо</h4>
+                    <p class="text-sm text-slate-500 leading-relaxed font-medium">Прополощите рот, нос и вымойте всё
+                        лицо.</p>
+                </div>
+                <!-- Карточка 3 -->
+                <div onclick="openWuduModal(3)"
+                    class="glass-panel p-8 hover:scale-105 transition-all duration-300 group cursor-pointer border-teal-50 shadow-md hover:shadow-xl">
+                    <div class="text-3xl font-black text-teal-600/20 mb-4 font-serif">III</div>
+                    <div class="text-5xl mb-5">💪</div>
+                    <h4 class="text-xl font-bold text-teal-950 mb-3">Руки и Голова</h4>
+                    <p class="text-sm text-slate-500 leading-relaxed font-medium">Мойте руки до локтей и протрите
+                        голову.</p>
+                </div>
+                <!-- Карточка 4 -->
+                <div onclick="openWuduModal(4)"
+                    class="glass-panel p-8 hover:scale-105 transition-all duration-300 group cursor-pointer border-teal-50 shadow-md hover:shadow-xl">
+                    <div class="text-3xl font-black text-teal-600/20 mb-4 font-serif">IV</div>
+                    <div class="text-5xl mb-5">🦶</div>
+                    <h4 class="text-xl font-bold text-teal-950 mb-3">Ноги</h4>
+                    <p class="text-sm text-slate-500 leading-relaxed font-medium">Тщательно вымойте обе ноги до
+                        щиколоток.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Раздел Структура -->
+        <section id="salah" class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+            <div class="lg:col-span-1 space-y-8 p-4">
+                <h2 class="text-4xl font-black text-teal-950">Структура Намаза</h2>
+                <p class="text-slate-600 leading-relaxed">Молитва состоит из циклов — ракаатов. График показывает объем
+                    обязательных и дополнительных действий.</p>
+                <div class="space-y-5">
+                    <div class="flex items-center gap-4 p-4 glass-panel border-l-8 border-teal-600 !rounded-xl">
+                        <div class="text-2xl font-bold text-teal-600">🕋</div>
+                        <div>
+                            <strong class="text-teal-950 block text-sm uppercase tracking-wider">Фард</strong>
+                            <span class="text-xs text-slate-500">Обязательные циклы</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 p-4 glass-panel border-l-8 border-amber-400 !rounded-xl">
+                        <div class="text-2xl font-bold text-amber-500">✨</div>
+                        <div>
+                            <strong class="text-amber-900 block text-sm uppercase tracking-wider">Сунна</strong>
+                            <span class="text-xs text-slate-500">Дополнительные молитвы</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-2 glass-panel p-10 shadow-2xl border-teal-50">
+                <div class="chart-container !h-[450px]">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Раздел Аналитика -->
+        <section id="stats" class="glass-panel p-10 md:p-16 shadow-2xl border-teal-50 text-center">
+            <h2 class="text-3xl font-black text-teal-950 mb-10 flex items-center justify-center gap-3">
+                <span class="text-amber-500">📈</span> Духовная динамика дня
+            </h2>
+            <div class="chart-container !h-[380px]">
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div class="p-6 rounded-3xl bg-teal-50/50 border border-teal-100">
+                    <p class="text-5xl font-black text-teal-700 mb-2">17</p>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest">Ракаатов в день</p>
+                </div>
+                <div class="p-6 rounded-3xl bg-teal-50/50 border border-teal-100">
+                    <p class="text-5xl font-black text-teal-700 mb-2">5</p>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest">Молитвенных пауз</p>
+                </div>
+                <div class="p-6 rounded-3xl bg-teal-50/50 border border-teal-100">
+                    <p class="text-5xl font-black text-teal-700 mb-2">365</p>
+                    <p class="text-xs text-slate-400 uppercase font-extrabold tracking-widest">Дней в году</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Виджет чата ИИ -->
+    <div id="aiChat" class="ai-chat-window glass-panel border-teal-200">
+        <div class="bg-teal-900 p-6 text-white flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-10 h-10 bg-amber-400 rounded-2xl flex items-center justify-center text-teal-950 font-black shadow-lg">
+                    ИИ</div>
+                <div>
+                    <h4 class="font-bold text-sm tracking-tight">Мудрый наставник</h4>
+                    <span class="flex items-center gap-1.5 text-[10px] text-teal-400 font-bold uppercase">
+                        <span class="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse"></span> Соединение активно
+                    </span>
+                </div>
+            </div>
+            <button onclick="toggleChat()" class="p-2 hover:bg-white/10 rounded-xl transition-colors">✕</button>
+        </div>
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar bg-white/50 flex flex-col">
+            <div class="message message-ai px-4 py-3 rounded-2xl shadow-sm">
+                Ассаляму алейкум! Я ваш духовный помощник. Какой у вас вопрос по омовению или совершению намаза?
+            </div>
+        </div>
+        <div class="p-4 bg-white/80 border-t border-teal-100 flex gap-3">
+            <input type="text" id="userInput" placeholder="Напишите вопрос..."
+                onkeypress="if(event.key==='Enter') sendMessage()"
+                class="flex-1 bg-teal-50 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-teal-500 outline-none font-medium">
+            <button onclick="sendMessage()"
+                class="bg-teal-700 text-white w-14 h-14 rounded-2xl flex items-center justify-center hover:bg-teal-800 transition-all shadow-lg active:scale-90">
+                ➤
+            </button>
+        </div>
+    </div>
+
+    <!-- Кнопка вызова чата -->
+    <button onclick="toggleChat()"
+        class="fixed bottom-10 right-10 w-20 h-20 bg-teal-700 text-white rounded-[30px] shadow-2xl flex items-center justify-center text-4xl hover:scale-110 hover:bg-teal-600 active:scale-95 transition-all z-40 group">
+        <span class="group-hover:rotate-12 transition-transform">✨</span>
+    </button>
+
+    <!-- Модальное окно Омовения -->
+    <div id="wuduModal" class="modal-overlay" onclick="closeWuduModal()">
+        <div class="glass-panel p-10 max-w-md w-full m-4 shadow-2xl relative" onclick="event.stopPropagation()">
+            <button onclick="closeWuduModal()"
+                class="absolute top-4 right-4 text-slate-400 hover:text-teal-600 text-xl">✕</button>
+            <div id="wuduModalContent" class="space-y-6">
+                <!-- Контент меняется динамически -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Конфигурация API ---
+
+        // ВАЖНО: 
+        // 1. Перейдите на https://aistudio.google.com/ и создайте бесплатный API ключ.
+        // 2. Вставьте ваш ключ ниже в переменную apiKey.
+        const apiKey = "AIzaSyAyvCTweYef5Of-ITGV9Xo8X01hLup78-I";
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+
+        // Функция вызова Gemini с экспоненциальной задержкой
+        async function callGemini(prompt, systemPrompt = "") {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+            if (systemPrompt) {
+                payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+            }
+
+            let lastErr = "";
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const resp = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!resp.ok) {
+                        const errData = await resp.json().catch(() => ({}));
+                        lastErr = errData.error?.message || `Ошибка ${resp.status}`;
+                        throw new Error(lastErr);
+                    }
+
+                    const data = await resp.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                    throw new Error("Пустой ответ от модели.");
+                } catch (e) {
+                    lastErr = e.message;
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+            return `### ОШИБКА: ${lastErr}. Проверьте соединение или наличие ключа.`;
+        }
+
+        // --- Интерактив Омовения ---
+        const wuduData = {
+            1: { title: "Намерение и Кисти", icon: "🤲", desc: "Мысленно выразите ният (намерение) совершить омовение ради Всевышнего. Скажите 'Бисмиллях'. Вымойте кисти рук три раза, промывая пространство между пальцами." },
+            2: { title: "Рот, Нос и Лицо", icon: "💧", desc: "Прополощите рот три раза. Промойте нос три раза. Затем вымойте все лицо три раза: от границы волос на лбу до низа подбородка и от уха до уха." },
+            3: { title: "Руки и Голова", icon: "💪", desc: "Вымойте правую руку до локтя включительно три раза, затем левую. Протрите влажной ладонью четверть головы (один раз). Протрите уши и шею." },
+            4: { title: "Ноги", icon: "🦶", desc: "Вымойте правую ногу до щиколоток три раза, затем левую. Убедитесь, что вода попала между всеми пальцами и на пятки." }
+        };
+
+        function openWuduModal(id) {
+            const data = wuduData[id];
+            const content = document.getElementById('wuduModalContent');
+            content.innerHTML = `
+                <div class="text-6xl text-center mb-4">${data.icon}</div>
+                <h3 class="text-3xl font-black text-teal-900 text-center">${data.title}</h3>
+                <p class="text-slate-600 leading-relaxed text-center font-medium">${data.desc}</p>
+                <div class="flex justify-center pt-4">
+                    <button onclick="closeWuduModal()" class="bg-teal-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-teal-700 transition-all">Понятно</button>
+                </div>
+            `;
+            document.getElementById('wuduModal').classList.add('active');
+        }
+
+        function closeWuduModal() {
+            document.getElementById('wuduModal').classList.remove('active');
+        }
+
+        // --- ИИ Вдохновение ---
+        async function fetchInspiration() {
+            const btn = document.getElementById('inspire-btn');
+            const label = document.getElementById('inspire-label');
+            const loader = document.getElementById('inspire-loader');
+            const textEl = document.getElementById('inspiration-text');
+            const statusEl = document.getElementById('ai-error-status');
+
+            btn.disabled = true;
+            label.classList.add('hidden');
+            loader.classList.remove('hidden');
+            statusEl.classList.add('hidden');
+
+            const result = await callGemini("Дай одно короткое вдохновляющее предложение для человека, начинающего учить намаз. Будь добрым и мудрым.", "Ты - мудрый исламский наставник.");
+
+            if (result.startsWith("### ОШИБКА")) {
+                statusEl.innerText = result.replace("### ", "");
+                statusEl.classList.remove('hidden');
+            } else {
+                textEl.innerText = result;
+            }
+
+            btn.disabled = false;
+            label.classList.remove('hidden');
+            loader.classList.add('hidden');
+        }
+
+        // --- AI Чат ---
+        function toggleChat() {
+            document.getElementById('aiChat').classList.toggle('active');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const container = document.getElementById('chatMessages');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Добавляем сообщение пользователя
+            const userMsg = document.createElement('div');
+            userMsg.className = 'message message-user px-4 py-3 shadow-sm';
+            userMsg.innerText = text;
+            container.appendChild(userMsg);
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+
+            // Индикатор печати
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message message-ai px-4 py-3 opacity-70 italic shadow-sm';
+            loadingMsg.innerHTML = '<span class="loading-dots">Наставник думает</span>';
+            container.appendChild(loadingMsg);
+            container.scrollTop = container.scrollHeight;
+
+            const result = await callGemini(text, "Ты - экспертный духовный наставник. Отвечай кратко, доступно и только по теме религии. Если вопрос не касается ислама или намаза, вежливо откажись.");
+
+            loadingMsg.classList.remove('italic', 'opacity-70');
+            if (result.startsWith("### ОШИБКА")) {
+                loadingMsg.innerHTML = `<span class="text-red-500 font-bold block mb-1">Ошибка связи</span><span class="text-[10px] opacity-60 leading-tight block">${result}</span>`;
+            } else {
+                loadingMsg.innerText = result;
+            }
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // --- Настройка графиков Chart.js ---
+        function wrapLabel(str, max = 16) {
+            if (str.length <= max) return str;
+            const words = str.split(' ');
+            const lines = [];
+            let currentLine = words[0];
+            for (let i = 1; i < words.length; i++) {
+                if (currentLine.length + 1 + words[i].length <= max) {
+                    currentLine += ' ' + words[i];
+                } else {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
+        const chartDefaults = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    backgroundColor: 'rgba(0, 137, 123, 0.9)',
+                    titleFont: { size: 14, weight: '800' },
+                    bodyFont: { size: 13 },
+                    padding: 12,
+                    cornerRadius: 12,
+                    callbacks: {
+                        title: function (tooltipItems) {
+                            const label = tooltipItems[0].chart.data.labels[tooltipItems[0].dataIndex];
+                            return Array.isArray(label) ? label.join(' ') : label;
+                        }
+                    }
+                },
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 10,
+                        usePointStyle: true,
+                        padding: 25,
+                        font: { size: 12, weight: '700' },
+                        color: '#1A3A3A'
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // 1. Radar Chart
+            new Chart(document.getElementById('radarChart'), {
+                type: 'radar',
+                data: {
+                    labels: ["Дисциплина духа", "Внутренний покой", "Фокус внимания", "Телесная сила", "Чистота мыслей"].map(l => wrapLabel(l)),
+                    datasets: [{
+                        label: 'Влияние практики',
+                        data: [92, 98, 85, 75, 100],
+                        backgroundColor: 'rgba(0, 137, 123, 0.15)',
+                        borderColor: '#00897B',
+                        pointBackgroundColor: '#FFCA28',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 3,
+                        pointRadius: 5,
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        r: {
+                            ticks: { display: false },
+                            grid: { color: '#E0F2F1' },
+                            angleLines: { color: '#E0F2F1' },
+                            pointLabels: { font: { size: 11, weight: '700' } }
+                        }
+                    }
+                }
+            });
+
+            // 2. Stacked Bar Chart
+            new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: {
+                    labels: ["Утренняя (Фаджр)", "Полуденная (Зухр)", "Предвечерняя (Аср)", "Вечерняя (Магриб)", "Ночная (Иша)"].map(l => wrapLabel(l)),
+                    datasets: [
+                        { label: 'Фард (Обязательно)', data: [2, 4, 4, 3, 4], backgroundColor: '#00897B', borderRadius: 12, barThickness: 40 },
+                        { label: 'Сунна (Желательно)', data: [2, 6, 0, 2, 6], backgroundColor: '#FFCA28', borderRadius: 12, barThickness: 40 }
+                    ]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, beginAtZero: true, grid: { color: '#F0F7F7' } }
+                    }
+                }
+            });
+
+            // 3. Line Chart
+            new Chart(document.getElementById('lineChart'), {
+                type: 'line',
+                data: {
+                    labels: ["Рассвет", "Полдень", "После полудня", "Закат", "Поздний вечер"].map(l => wrapLabel(l)),
+                    datasets: [{
+                        label: 'Уровень осознанности',
+                        data: [98, 85, 82, 90, 95],
+                        borderColor: '#00897B',
+                        backgroundColor: 'rgba(0, 137, 123, 0.05)',
+                        fill: true,
+                        tension: 0.5,
+                        borderWidth: 6,
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#00897B',
+                        pointBorderWidth: 4
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: '#F0F7F7' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Сворачивание чата при скролле вниз для мобильных (UX рекомендация)
+            let lastScroll = 0;
+            window.addEventListener('scroll', () => {
+                const currentScroll = window.pageYOffset;
+                const chat = document.getElementById('aiChat');
+                if (currentScroll > lastScroll && chat.classList.contains('active')) {
+                    chat.classList.remove('active'); // Сворачиваем если пользователь листает контент
+                }
+                lastScroll = currentScroll;
+            });
+        });
+    </script>
+</body>
+
+</html>
